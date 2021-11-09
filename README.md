@@ -31,7 +31,7 @@ TODO
 * TX        - TMC2208 single wire uart
 # Wiring
 
-![alt tag](https://github.com/BubuHub/ESP8266_Camera_Slider/blob/master/blob/assets/schematic.png)
+![alt tag](https://github.com/BubuHub/ESP8266_Camera_Slider/blob/main/blob/assets/schematic.png)
 
 ## Building
 
