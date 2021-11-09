@@ -26,8 +26,9 @@ Features:
 * screws
 
 
-![alt tag](https://github.com/BubuHub/ESP8266_Camera_Slider/blob/main/blob/assets/front.png)
-![alt tag](https://github.com/BubuHub/ESP8266_Camera_Slider/blob/main/blob/assets/rear.png)
+![alt tag](https://github.com/BubuHub/ESP8266_Camera_Slider/blob/main/blob/assets/front.jpg)
+
+![alt tag](https://github.com/BubuHub/ESP8266_Camera_Slider/blob/main/blob/assets/rear.jpg)
 
 
 # Electrical parts needed:
