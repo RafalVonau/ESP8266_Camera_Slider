@@ -6,8 +6,11 @@ This repository contains the software for my ESP8266 based Camera slider.
 
 Features:
 - No collision-detection!!
+- Simple commands over TCP (port 2500),
+- Simple commands over HTTP POST ( http://slider.local/post )
+- Set mottor current and microsteps per step by a command (software).
 
-![alt tag](https://github.com/BubuHub/ESP8266_Camera_Slider/blob/main/blob/assets/slider.png)
+![alt tag](https://github.com/BubuHub/ESP8266_Camera_Slider/blob/main/blob/assets/slider.jpg)
 
 
 # Mechanical parts needed:
@@ -64,6 +67,27 @@ The project uses platformio build environment.
 You can also use IDE to build this project on Linux/Windows/Mac. My fvorite ones:
 * [Code](https://code.visualstudio.com/) 
 * [Atom](https://atom.io/)
+
+
+# Commands
+C - set mottor current in mA
+Example (set mottor curent to 400mA):
+
+C,400
+
+S - set microstps per step (1,2,3,8,16,32,64,128,256)
+Example (set 32 misrosteps per step):
+
+S,32
+
+M - Absolute move ( parameters: time in ms, start position, end position)
+Example (move from position 1 to 45 in 30000 miliseconds):
+M,30000,1,45
+
+MR - Relative move ( parameters: time in miliseconds, position incremental value):
+Example (move 1 revolution in backward direction in 2 seconds):
+MR,2000,1
+
 
 Enjoy :-)
 
