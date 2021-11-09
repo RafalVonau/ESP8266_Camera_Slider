@@ -16,12 +16,21 @@ Uncomment and modify Wifi client settings in secrets.h file:
 * DC/DC converter 12V to 3.3V,
 * 1 x TMC2208,
 * 1 x Stepper mottor Nema 17,
-* 3D printed and mechanical pars,
 * wires,
 * connectors,
 
 # Mechanical parts needed:
-TODO
+* 3D printed pars,
+* 1 x T8 Trapezoidal Lead Screw L=500mm,
+* 1 x T8 Brass Nut,
+* 2 x KP08 Bore Ball Bearing Pillow Block Mounted Support 8mm,
+* 2 x 8mm Inner Dia L=34.5mm SCS8UU Linear Bearing,
+* 2 x Aluminum 8mm Innner Dia 42x32x11mm SK8 Linear Rod Rail Support Guide Shaft Bearing
+* 2 x Linear Shaft Optical Axis 8mm L=500mm,
+* 4 x SK8 Linear Rod Rail Shaft,
+* 1 x T8 Nut Conversion Seat,
+* screws
+
 
 # D1 mini CONNECTIONS
 * STEP      - GPIO14 (D5)
