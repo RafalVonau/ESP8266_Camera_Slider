@@ -7,17 +7,8 @@ This repository contains the software for my ESP8266 based Camera slider.
 Features:
 - No collision-detection!!
 
-Uncomment and modify Wifi client settings in secrets.h file:
-* #define WIFI_SSID                "Slider"
-* #define WIFI_PASS                "SliderPass"
+![alt tag](https://github.com/BubuHub/ESP8266_Camera_Slider/blob/main/blob/assets/slider.png)
 
-# Electrical parts needed:
-* ESP8266,
-* DC/DC converter 12V to 3.3V,
-* 1 x TMC2208,
-* 1 x Stepper mottor Nema 17,
-* wires,
-* connectors,
 
 # Mechanical parts needed:
 * 3D printed pars,
@@ -32,6 +23,19 @@ Uncomment and modify Wifi client settings in secrets.h file:
 * screws
 
 
+![alt tag](https://github.com/BubuHub/ESP8266_Camera_Slider/blob/main/blob/assets/front.png)
+![alt tag](https://github.com/BubuHub/ESP8266_Camera_Slider/blob/main/blob/assets/rear.png)
+
+
+# Electrical parts needed:
+* ESP8266,
+* DC/DC converter 12V to 3.3V,
+* 1 x TMC2208,
+* 1 x Stepper mottor Nema 17,
+* wires,
+* connectors,
+
+
 # D1 mini CONNECTIONS
 * STEP      - GPIO14 (D5)
 * DIR1      - GPIO13 (D7)
@@ -43,6 +47,10 @@ Uncomment and modify Wifi client settings in secrets.h file:
 ![alt tag](https://github.com/BubuHub/ESP8266_Camera_Slider/blob/main/blob/assets/schematic.png)
 
 ## Building
+
+Uncomment and modify Wifi client settings in secrets.h file:
+* #define WIFI_SSID                "Slider"
+* #define WIFI_PASS                "SliderPass"
 
 The project uses platformio build environment. 
 [PlatformIO](https://platformio.org/) - Professional collaborative platform for embedded development.
