@@ -1,0 +1,41 @@
+canvas { 
+	border: 1px solid black;
+}
+
+#myProgress {
+	width: 100%;
+	background-color: grey;
+}
+
+#myBar {
+	width: 0%;
+	height: 30px;
+	background-color: green;
+}
+
+.btn-group button {
+  background-color: #04AA6D; /* Green background */
+  border: 2px solid green; /* Green border */
+  color: white; /* White text */
+  padding: 10px 24px; /* Some padding */
+  cursor: pointer; /* Pointer/hand icon */
+  float: left; /* Float the buttons side by side */
+  width:200px;
+  margin:10px 10px 10px 10px; 
+}
+
+.btn-group button:not(:last-child) {
+  border-right: none; /* Prevent double borders */
+}
+
+/* Clear floats (clearfix hack) */
+.btn-group:after {
+  content: "";
+  clear: both;
+  display: table;
+}
+
+/* Add a background color on hover */
+.btn-group button:hover {
+  background-color: #3e8e41;
+}
