@@ -77,30 +77,29 @@ You can also use IDE to build this project on Linux/Windows/Mac. My fvorite ones
 # Commands
 EM  - enable mottors,
 
-Movement in revolutions:
-
-M   - absolute move in mottor revolutions (M,duration [ms],start_rev,target_rev),
-MR  - relative move in mottor revolutions (MR,duration [ms],delta rev),
+Movement in revolutions:\
+M   - absolute move in mottor revolutions (M,duration [ms],start_rev,target_rev),\
+MR  - relative move in mottor revolutions (MR,duration [ms],delta rev),\
 MH  - move to home (endstop switch is required),
 
-Movement in microsteps:
-GT  - apbsolute move in microsteps (GT,duration [ms],start_microstep,target_microstep)
-GTR - relative move in microsteps (GTR,duration [ms],delta microsteps)
-GTH - move to home (endstop switch is required),
+Movement in microsteps:\
+GT  - apbsolute move in microsteps (GT,duration [ms],start_microstep,target_microstep)\
+GTR - relative move in microsteps (GTR,duration [ms],delta microsteps)\
+GTH - move to home (endstop switch is required),\
 UM  - unconditional relative move in microsteps WARRNING: do not check limits. (UM,duration [ms],delta microsteps)
 
 STP - STOP move,
 
-Parameters set:
-G90 - Set this possition as zero point,
-C   - set motor current in [mA]),
+Parameters set:\
+G90 - Set this possition as zero point,\
+C   - set motor current in [mA]),\
 S   - set mocrosteps per step,
 
-STATUS:
+STATUS:\
 XX  - print status,
 
 
-Examples: 
+Examples:
 
 set mottor curent to 400mA:
 
@@ -115,6 +114,7 @@ Move from revolution 1 to 45 in 30000 miliseconds:
 M,30000,1,45
 
 Move 1 revolution in backward direction in 2 seconds:
+
 MR,2000,1
 
 Stop move:
