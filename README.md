@@ -56,7 +56,15 @@ Features:
 
 ![alt tag](https://github.com/BubuHub/ESP8266_Camera_Slider/blob/main/blob/assets/schematic.png)
 
-## Building
+# Software architecture
+
+The ESP8266 generates STEP and DIR signals to the TMC2208 chip for motor movement. The UART connection allows you to program the TMC2208 chip registers so you can easily change the current and the number of micro steps per step without having to turn a potentiometer or change jumpers. 
+
+STEP signal is generated using Timer1 (for performance reasons the interrupt control was taken from this timer and it was set to AUTORELOAD mode) and because Timer1 is used in servo/pwm(analogWrite)/tone/waveform functions these functions can't be used in this code. 
+
+Commands are received on the fly from TCP channels (port 2500) and the WWW page (POST) and then passed to the command queue. The movement commands are passed to a separate queue so that sequences of movements can be queued. When the move is completed, the next command from the move queue is taken, and so on.
+
+# Building
 
 Uncomment and modify Wifi client settings in secrets.h file:
 * #define WIFI_SSID                "Slider"
