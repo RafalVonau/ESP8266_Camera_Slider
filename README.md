@@ -88,22 +88,22 @@ You can also use IDE to build this project on Linux/Windows/Mac. My fvorite ones
 EM  - enable mottors,
 
 Movement in revolutions:\
-M   - absolute move in mottor revolutions (M,duration [ms],start_rev,target_rev),\
-MR  - relative move in mottor revolutions (MR,duration [ms],delta rev),\
+M   - absolute move in motor revolutions (M,duration [ms],start_rev,target_rev),\
+MR  - relative move in motor revolutions (MR,duration [ms],delta rev),\
 MH  - move to home (endstop switch is required),
 
 Movement in microsteps:\
-GT  - apbsolute move in microsteps (GT,duration [ms],start_microstep,target_microstep)\
+GT  - absolute move in microsteps (GT,duration [ms],start_microstep,target_microstep)\
 GTR - relative move in microsteps (GTR,duration [ms],delta microsteps)\
 GTH - move to home (endstop switch is required),\
-UM  - unconditional relative move in microsteps WARRNING: do not check limits. (UM,duration [ms],delta microsteps)
+UM  - unconditional relative move in microsteps WARNING: do not check limits. (UM,duration [ms],delta microsteps)
 
 STP - STOP move,
 
 Parameters set:\
 G90 - Set this possition as zero point,\
-C   - set motor current in [mA]),\
-S   - set mocrosteps per step,
+C   - set motor current in [mA],\
+S   - set microsteps per step,
 
 STATUS:\
 XX  - print status,
