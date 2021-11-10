@@ -36,20 +36,22 @@ Features:
 
 
 # Electrical parts needed:
-* ESP8266,
+* ESP8266 (bare ESP8266 module or D1 mini),
 * DC/DC converter 12V to 3.3V,
 * 1 x TMC2208,
 * 1 x Stepper mottor Nema 17,
 * wires,
 * connectors,
+* [1 x Limit Switch Endstop for Creality CR-10 10S Ender 3] - OPTIONAL
 
 
 # D1 mini CONNECTIONS
 * STEP      - GPIO14 (D5)
 * DIR1      - GPIO13 (D7)
 * MOTTOR EN - GPIO2  (D4)
-* RX        - TMC2208 single wire uart
-* TX        - TMC2208 single wire uart
+* RX        - TMC2208 single wire uart (1kohm from RX to TX)
+* TX        - TMC2208 single wire uart (1kohm from RX to TX)
+* ENDSTOP   - GPIO4  (D2)  - OPTIONAL
 # Wiring
 
 ![alt tag](https://github.com/BubuHub/ESP8266_Camera_Slider/blob/main/blob/assets/schematic.png)

@@ -1727,6 +1727,8 @@ Comments, suggestions and bug reports please send to: &lt;b&gt;&lt;a href="mailt
 <part name="R2" library="SMD" deviceset="RES-0805" device="" value="1k"/>
 <part name="C1" library="DISCRETE_mm" deviceset="C-EL" device="-3,5/8" value="100u/16V"/>
 <part name="U$4" library="SUPPLY" deviceset="GND" device=""/>
+<part name="J2" library="ELFIN" deviceset="GMKDS-2" device=""/>
+<part name="U$7" library="SUPPLY" deviceset="GND" device=""/>
 </parts>
 <sheets>
 <sheet>
@@ -1755,6 +1757,8 @@ Comments, suggestions and bug reports please send to: &lt;b&gt;&lt;a href="mailt
 <instance part="R2" gate="G$1" x="99.06" y="66.04" rot="R180"/>
 <instance part="C1" gate="C" x="27.94" y="2.54"/>
 <instance part="U$4" gate="GND" x="27.94" y="-5.08"/>
+<instance part="J2" gate="G$1" x="121.92" y="58.42"/>
+<instance part="U$7" gate="GND" x="114.3" y="53.34"/>
 </instances>
 <busses>
 </busses>
@@ -1822,6 +1826,10 @@ Comments, suggestions and bug reports please send to: &lt;b&gt;&lt;a href="mailt
 <segment>
 <pinref part="C1" gate="C" pin="2"/>
 <pinref part="U$4" gate="GND" pin="GND"/>
+</segment>
+<segment>
+<pinref part="J2" gate="G$1" pin="2"/>
+<pinref part="U$7" gate="GND" pin="GND"/>
 </segment>
 </net>
 <net name="+3.3V" class="0">
@@ -1932,6 +1940,16 @@ Comments, suggestions and bug reports please send to: &lt;b&gt;&lt;a href="mailt
 <wire x1="25.4" y1="50.8" x2="22.86" y2="50.8" width="0.1524" layer="91"/>
 <wire x1="38.1" y1="48.26" x2="25.4" y2="48.26" width="0.1524" layer="91"/>
 <junction x="25.4" y="48.26"/>
+</segment>
+</net>
+<net name="ENDSTOP" class="0">
+<segment>
+<pinref part="U$1" gate="G$1" pin="D2"/>
+<wire x1="86.36" y1="58.42" x2="111.76" y2="58.42" width="0.1524" layer="91"/>
+<wire x1="111.76" y1="58.42" x2="111.76" y2="60.96" width="0.1524" layer="91"/>
+<pinref part="J2" gate="G$1" pin="1"/>
+<wire x1="111.76" y1="60.96" x2="114.3" y2="60.96" width="0.1524" layer="91"/>
+<label x="91.44" y="58.42" size="1.778" layer="95"/>
 </segment>
 </net>
 </nets>

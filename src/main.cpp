@@ -350,10 +350,8 @@ void cmdHome(CommandQueueItem *c)
 		m1d->loop();
 		CmdDB.loop();
 		if ((digitalRead(z_endstop)) == 0) {
-			m1d->stop();
-			g_pos_x = 0;
-			c->sendAck();
-			break;
+			cmdG90(c);
+			return;
 		}
 		yield();
 	}
