@@ -39,7 +39,7 @@ Features:
 * ESP8266 (bare ESP8266 module or D1 mini),
 * DC/DC converter 12V to 3.3V,
 * 1 x TMC2208,
-* 1 x Stepper mottor Nema 17,
+* 1 x Stepper motor Nema 17,
 * wires,
 * connectors,
 * [1 x Limit Switch Endstop for Creality CR-10 10S Ender 3] - OPTIONAL
@@ -49,8 +49,8 @@ Features:
 * STEP      - GPIO14 (D5)
 * DIR1      - GPIO13 (D7)
 * MOTTOR EN - GPIO2  (D4)
-* RX        - TMC2208 single wire uart (1kohm from RX to TX)
-* TX        - TMC2208 single wire uart (1kohm from RX to TX)
+* RX        - TMC2208 single wire UART (1kohm from RX to TX)
+* TX        - TMC2208 single wire UART (1kohm from RX to TX)
 * ENDSTOP   - GPIO4  (D2)  - OPTIONAL
 # Wiring
 
@@ -74,8 +74,8 @@ The project uses platformio build environment.
 [PlatformIO](https://platformio.org/) - Professional collaborative platform for embedded development.
 
 * install PlatformIO
-* enter project directory (esp8266_firmware)
-* connect ESP8266 PC computer over USB to serial cable.
+* enter project directory
+* connect ESP8266 to PC computer over USB to serial cable.
 * type in terminal:
   platformio run -t upload
 
