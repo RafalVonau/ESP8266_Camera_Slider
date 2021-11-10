@@ -1,5 +1,5 @@
 /*
- * NetworkCommand - Execite eggbot commands over a TCP/IP stream.
+ * NetworkCommand - Execite commands over a TCP/IP stream.
  *
  * Author: Rafal Vonau <rafal.vonau@gmail.com>
  *

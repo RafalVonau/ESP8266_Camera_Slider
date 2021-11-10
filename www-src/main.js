@@ -2,6 +2,7 @@
 function addMessage(m)
 {
 	console.log(m);
+	$("#console").append(m+"</br>");
 }
 
 function sendCommand(c)
@@ -12,7 +13,7 @@ function sendCommand(c)
 		data:{cmd: c},
 		dataType:"html",
 		success:function(data) {
-			console.log('Cmd: ' + data);
+			addMessage('Cmd: ' + data);
 		}
 	});
 }
@@ -50,4 +51,7 @@ $(document).ready(function()
 	$("#but_right20").click(function(){ sendCommand("MR,12000,20");});
 	$("#but_left20").click(function(){ sendCommand("MR,12000,-20");});
 	$("#but_right10").click(function(){ sendCommand("MR,6000,10");});
+	$("#but_stop").click(function(){ sendCommand("STP");});
+	$("#but_home").click(function(){ sendCommand("MH");});
+	$("#but_send").click(function(){ sendCommand($("#cmd").val());});
 });

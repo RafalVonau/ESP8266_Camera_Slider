@@ -1,5 +1,5 @@
 /*
- * One axis (1D) motion class for ESP8266.
+ * One axis (1D) motion class for ESP8266 (simple constant speed no RAMP motion controll).
  *
  * Author: Rafal Vonau <rafal.vonau@gmail.com>
  *
@@ -15,25 +15,22 @@ extern "C" {
 #include "esp8266_gpio_direct.h"
 #include "core_esp8266_waveform.h"
 
+#define TIMER1_DIVIDE_BY_1              0x0000
 #define TIMER1_DIVIDE_BY_16             0x0004
 #define TIMER1_ENABLE_TIMER             0x0080
+#define TIMER1_AUTORELOAD               (1u<<6)
 
-#define MIN_PERIOD                      (250)
-/* Use period correction - calculate time to enter interrupt handler */
-#define CORRECT_PERIOD
+#define MIN_PERIOD                      (4000)
 
-static volatile int        int_active   = 0;
-static volatile int        in_motion    = 0;
+static volatile int        int_active      = 0;   /*!< Timer1 interrupt is active (Timer1 is running).   */
+static volatile int        in_motion       = 0;   /*!< We are in motion.                                 */
 
 /* X */
-static uint16_t            x_gpio_mask  = 0;
-static volatile uint32_t   x_period0    = 0;
-static volatile uint32_t   x_period1    = 0;
-static volatile int        x_target     = 0;
-static volatile int        x_pos        = 0;
-static volatile int        x_pulse      = 0;
-static volatile uint32_t   next_event_time = 0;
-
+static uint16_t            x_gpio_mask     = 0;   /*!< GPIO mask for STEP pin.                           */
+static volatile uint32_t   x_hperiod       = 0;   /*!< TIMER1 half period in clock cycles (80MHz clock). */
+volatile int               x_target        = 0;   /*!< Target position.                                  */
+volatile int               x_pos           = 0;   /*!< Current position.                                 */
+static volatile int        x_pulse         = 0;   /*!< STEP pulse phase 0 (level 0), 1 (level 1).        */
 
 struct timer_regs {
 	uint32_t frc1_load;   /* 0x60000600 */
@@ -83,10 +80,9 @@ static inline ICACHE_RAM_ATTR void motion1D_timer1_enable()
 {
 	int_active = 1;
 	ETS_FRC1_INTR_ENABLE();
-	RTC_REG_WRITE(FRC1_LOAD_ADDRESS, x_period1);
+	RTC_REG_WRITE(FRC1_LOAD_ADDRESS, x_hperiod);
 	timer->frc1_int &= ~FRC1_INT_CLR_MASK;
-	next_event_time = GetCycleCount() + x_period1;
-	timer->frc1_ctrl = TIMER1_DIVIDE_BY_16 | TIMER1_ENABLE_TIMER;
+	timer->frc1_ctrl = TIMER1_DIVIDE_BY_1 | TIMER1_AUTORELOAD | TIMER1_ENABLE_TIMER;
 }
 //===========================================================================================
 
@@ -122,6 +118,25 @@ Motion1D::Motion1D(int step1, int dir1, int en_pin)
 	m_motionQWr   = 0;
 	m_motionQRd   = 0;
 #endif
+}
+//====================================================================================
+
+
+void Motion1D::stop()
+{
+	/* Flush the motion Queue */
+#ifdef MOTION_QUEUE_SIZE
+	m_motionQWr   = 0;
+	m_motionQRd   = 0;
+#endif
+	/* Stop timer 1 */
+	motion1D_timer1_disable();
+	x_target = x_pos;
+	if (x_pulse) {
+		asm volatile ("" : : : "memory");
+		gpio_r->out_w1tc = (uint32_t)(x_gpio_mask);
+		x_pulse = 0;
+	}
 }
 //====================================================================================
 
@@ -163,7 +178,7 @@ void Motion1D::toggleMotors()
  */
 void Motion1D::goToReal(int duration, int xSteps)
 {
-	int tmp;
+	uint64_t tmp;
 	if (in_motion) { return; }
 	if (!m_motorsEnabled) {motorsOn();}
 	
@@ -179,20 +194,15 @@ void Motion1D::goToReal(int duration, int xSteps)
 	if (x_target > x_pos) digitalWrite(m_x_dir, HIGH); else digitalWrite(m_x_dir, LOW);
 	/* ABS */
 	if (xSteps < 0) xSteps = -xSteps;
-	/* Set period assume 5MHz timer1 clock (80MHz / 16) */
+	/* Set period (timer1 clock  = 80MHz) */
 	if (xSteps) {
-#ifdef CORRECT_PERIOD
-		tmp = ((duration * 5000)/xSteps)-29;
-#else
-		tmp = ((duration * 5000)/xSteps)-10;
-#endif
+		tmp = ((duration * 80000)/xSteps)-1;
 	} else {
-		tmp = 10000;
+		tmp = 160000;
 	}
 	if (tmp < MIN_PERIOD) tmp = MIN_PERIOD;
 	/* Calculate half period */
-	x_period0 = (tmp >> 1);
-	x_period1 = tmp - x_period0;
+	x_hperiod = ((tmp >> 1)&0xffffffff);
 
 	/* Start timer1 */
 	in_motion  = 1;
@@ -228,18 +238,31 @@ boolean Motion1D::loop()
 }
 //====================================================================================
 
+/*!
+ * \brief Check in motion flag.
+ */
+boolean Motion1D::isInMotion()
+{
+	if (in_motion) return true;
+#ifdef MOTION_QUEUE_SIZE
+	if (m_motionQWr  != m_motionQRd) return true;
+#endif	
+	return false;
+}
+//====================================================================================
+
 // Speed critical bits
 #pragma GCC optimize ("O2")
 // Normally would not want two copies like this, but due to different
 // optimization levels the inline attribute gets lost if we try the
 // other version.
 
-static inline ICACHE_RAM_ATTR uint32_t GetCycleCountIRQ()
-{
-	uint32_t ccount;
-	__asm__ __volatile__("rsr %0,ccount":"=a"(ccount));
-	return ccount;
-}
+//static inline ICACHE_RAM_ATTR uint32_t GetCycleCountIRQ()
+//{
+//	uint32_t ccount;
+//	__asm__ __volatile__("rsr %0,ccount":"=a"(ccount));
+//	return ccount;
+//}
 //===========================================================================================
 
 /*!
@@ -247,9 +270,8 @@ static inline ICACHE_RAM_ATTR uint32_t GetCycleCountIRQ()
  */
 void ICACHE_RAM_ATTR motion_intr_handler(void)
 {
-#ifdef CORRECT_PERIOD
-	uint32_t c, tmp;
-#endif	
+	/* Clear interrupt mask */
+	timer->frc1_int &= ~FRC1_INT_CLR_MASK;
 	if (x_pulse) {
 		asm volatile ("" : : : "memory");
 		gpio_r->out_w1tc = (uint32_t)(x_gpio_mask);
@@ -259,45 +281,12 @@ void ICACHE_RAM_ATTR motion_intr_handler(void)
 			timer->frc1_int &= ~FRC1_INT_CLR_MASK;
 			timer->frc1_ctrl = 0;
 			int_active = 0;
-		} else { 
-			/* Start timer */
-#ifdef CORRECT_PERIOD
-		next_event_time += x_period0;
-		c = GetCycleCountIRQ();
-		tmp = next_event_time - c; 
-		if (tmp > x_period0) { 
-			/* period is too short - step missed */
-			tmp = x_period0; 
-			next_event_time = c + x_period0; 
-		}
-		timer->frc1_int &= ~FRC1_INT_CLR_MASK;
-		WRITE_PERI_REG(&timer->frc1_load, tmp);
-#else			
-		timer->frc1_int &= ~FRC1_INT_CLR_MASK;
-		WRITE_PERI_REG(&timer->frc1_load, x_period0);
-#endif			
 		}
 	} else if (x_pos != x_target) {
 		asm volatile ("" : : : "memory");
 		gpio_r->out_w1ts = (uint32_t)(x_gpio_mask);
 		x_pulse = 1;
 		if (x_pos > x_target) x_pos--; else x_pos++;
-		/* Start timer */
-#ifdef CORRECT_PERIOD
-		next_event_time += x_period1;
-		c = GetCycleCountIRQ();
-		tmp = next_event_time - c;
-		if (tmp > x_period1) { 
-			/* period is too short - step missed */
-			tmp = x_period1; 
-			next_event_time = c + x_period1; 
-		}
-		timer->frc1_int &= ~FRC1_INT_CLR_MASK;
-		WRITE_PERI_REG(&timer->frc1_load, tmp);
-#else			
-		timer->frc1_int &= ~FRC1_INT_CLR_MASK;
-		WRITE_PERI_REG(&timer->frc1_load, x_period1);
-#endif		
 	} else {
 		/* We are in target position :-) - disable timer */
 		timer->frc1_int &= ~FRC1_INT_CLR_MASK;

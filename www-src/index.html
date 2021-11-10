@@ -28,5 +28,44 @@
 		<button id="but_left20">&larr; 20 rev</button>
 		<button id="but_right20">&rarr; 20 rev</button>
 	</div>
+	<div class="btn-group">
+		<button id="but_home">HOME</button>
+		<button style="background-color:red;" id="but_stop">STOP</button>
+	</div>
+	<div class="btn-group">
+	<pre>
+<b>Commands:</b>
+
+EM  - enable mottors,
+
+<b>===--- Movement in revolutions --===</b>
+M   - absolute move in mottor revolutions (M,duration [ms],start_rev,target_rev),
+MR  - relative move in mottor revolutions (MR,duration [ms],delta rev),
+MH  - move to home (endstop switch is required),
+
+<b>===--- Movement in microsteps --===</b>
+GT  - apbsolute move in microsteps (GT,duration [ms],start_microstep,target_microstep)
+GTR - relative move in microsteps (GTR,duration [ms],delta microsteps)
+GTH - move to home (endstop switch is required),
+UM  - unconditional relative move in microsteps WARRNING: do not check limits. (UM,duration [ms],delta microsteps)
+
+STP - STOP move,
+
+<b>===--- Parameters set --===</b>
+G90 - Set this possition as zero point,
+C   - set motor current in [mA]),
+S   - set mocrosteps per step,
+
+<b>===--- STATUS --===</b>
+XX  - print status,
+	</pre>
+	</div>
+	<div class="btn-group2">
+		<input type="text" id="cmd" name="cmd">
+		<button id="but_send">SEND</button>
+	</div>
+	</br>
+	<div class="console" id="console">
+	</div>
 </body>
 </html>

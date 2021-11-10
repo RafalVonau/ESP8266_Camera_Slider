@@ -45,6 +45,7 @@ public:
 	void printInt(int i) {this->print(String(i) +"\r\nOK\r\n");       }
 	void sendAck()       {this->print("OK\r\n");                      }
 	void sendError()     {this->print("!8 Err: Unknown command\r\n"); }
+	void sendErrorText(String s) {this->print("!8 Err: "+s+"\r\n"); }
 	void execute() {m_cb(this);}                          // Execute (use calback function)
 public:
 	int            m_arg0;

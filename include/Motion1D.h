@@ -19,6 +19,9 @@
 #include "osapi.h"
 #include "Command.h"
 
+extern volatile int               x_target;
+extern volatile int               x_pos;
+
 
 #define MOTION_QUEUE_SIZE (64)
 
@@ -41,7 +44,7 @@ public:
 	void toggleMotors();
 	
 	boolean loop();
-
+	boolean isInMotion();
 	void goToReal(int duration, int xSteps);
 
 
@@ -86,6 +89,7 @@ public:
 #else
 	void goTo(int duration, int xSteps) {goToReal(duration, xSteps);}
 #endif
+	void stop();
 	void printStat(CommandQueueItem *c);
 public:
 	int           m_x_dir;

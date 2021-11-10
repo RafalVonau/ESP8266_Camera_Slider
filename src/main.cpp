@@ -15,6 +15,18 @@ extern "C" {
 #define HOSTNAME                 "slider"
 #define NPORT                    (2500)
 
+#define MAX_DIST_MOTTOR (45)
+
+// PIN definition
+#define step1        14
+#define dir1         13
+#define enableMotor  2
+#define z_endstop    4
+
+
+#define SERIAL_PORT Serial    // TMC2208/TMC2224 HardwareSerial port
+#define R_SENSE     0.11      // SilentStepStick series use 0.11     Watterott TMC5160 uses 0.075
+
 
 #ifdef DEBUG_ENABLED
 UdpLoggerClass     UdpLogger;
@@ -30,16 +42,7 @@ class WiFiManager {
 };
 #include "secrets.h"
 
-
-//Rotational Stepper: ("X - EGG")
-#define step1        14
-#define dir1         13
-#define enableMotor  2
-//#define GPIO_LED_PIN 2
-#define SERIAL_PORT Serial // TMC2208/TMC2224 HardwareSerial port
-#define R_SENSE 0.11  // SilentStepStick series use 0.11     Watterott TMC5160 uses 0.075
-
-
+/* Global variables */
 TMC2208Stepper driver = TMC2208Stepper(&SERIAL_PORT, R_SENSE); // Hardware Serial0
 Motion1D          *m1d;
 CommandDB         CmdDB;
@@ -47,8 +50,18 @@ NetworkCommand    *NCmd;
 HTTPCommand       *HCmd;
 volatile int ota_in_progress = 0;
 static int current_microsteps = 256;
+
 static void makeCmdInterface();
 
+/*!
+ * \brief Setup.
+ * 1. Configure gpio.
+ * 2. Connect to WiFi.
+ * 3. Setup OTA.
+ * 4. Register available commands.
+ * 5. Configure TMC2208.
+ * 6. Create Motion1D controller.
+ */
 void setup()
 {
 	/* Setup pins */
@@ -57,6 +70,9 @@ void setup()
 	pinMode(step1, OUTPUT);
 	pinMode(dir1, OUTPUT);
 	digitalWrite(enableMotor, HIGH);
+#ifdef z_endstop
+	pinMode(z_endstop, INPUT_PULLUP);
+#endif	
 	/* Connect to WiFi */
 	detect_network();
 #ifdef DEBUG_ENABLED
@@ -90,11 +106,18 @@ void setup()
 }
 //====================================================================================
 
+/*!
+ * \brief MAIN loop.
+ * 1. Handle OTA.
+ * 2. Handle CMD queue.
+ * 3. Handle motion loop.
+ */
 void loop()
 {
 	/* Handle OTA */
 	ArduinoOTA.handle();
 	if (ota_in_progress) return;
+
 	/* Execute command from queue */
 	if ( m1d->loop() ) {
 		CmdDB.loop();
@@ -105,29 +128,18 @@ void loop()
 }
 //====================================================================================
 
+/*!
+ * \brief Global position estimation.
+ */
 static int g_pos_x = 0;
 
-static void stepperMove(CommandQueueItem *c)
-{
-	int duration = c->m_arg0;
-	int rotStepsEBB   = c->m_arg1;
-
-	if ((c->m_arg_mask & 3) != 3) {
-		c->sendError();
-		return;
-	}
-	c->sendAck();
-	if ( rotStepsEBB == 0 ) {
-		delay(duration);
-		return;
-	}
-	m1d->goTo(duration, rotStepsEBB);
-}
-//====================================================================================
 
 #define MAX_DIST_MOTTOR (45)
 
-static void stepperMoveSmart(CommandQueueItem *c)
+/*!
+ * \brief Move to revolution command (absolute move).
+ */
+static void stepperMoveAbsoluteRev(CommandQueueItem *c)
 {
 	int d        = c->m_arg0;
 	int newS     = c->m_arg1;
@@ -170,7 +182,10 @@ static void stepperMoveSmart(CommandQueueItem *c)
 }
 //====================================================================================
 
-static void stepperMoveRelative(CommandQueueItem *c)
+/*!
+ * \brief Move relative command (in revolution).
+ */
+static void stepperMoveRelativeRev(CommandQueueItem *c)
 {
 	int d        = c->m_arg0;
 	int newS     = g_pos_x + (c->m_arg1 * 200 * current_microsteps);
@@ -194,14 +209,178 @@ static void stepperMoveRelative(CommandQueueItem *c)
 }
 //====================================================================================
 
-
-void cmdG90(CommandQueueItem *c)
+/*!
+ * \brief Move to position command (absolute move).
+ */
+static void stepperMoveAbsolute(CommandQueueItem *c)
 {
-	g_pos_x = 0;
+	int d        = c->m_arg0;
+	int newS     = c->m_arg1;
+	int newE     = c->m_arg2;
+	int duration, aX, dX;
+	int speed    = 3000;
+	int mm = MAX_DIST_MOTTOR * 200 * current_microsteps;
+
+	if ((c->m_arg_mask & 7) != 7) {
+		c->sendError();
+		return;
+	}
+	
+	/* Limit move distance */
+	if (newS > mm) newS = mm;
+	if (newS < 0) newS = 0;
+	if (newE > mm) newE = mm;
+	if (newE < 0) newE = 0;
+	
+	dX = newS - g_pos_x;
+	if (dX < 0) aX = -dX; else aX = dX;
+
+	/* Calculate duration in [ms] */
+	if (aX) {
+		duration = (aX * 1000)/speed;
+		m1d->goTo(duration, dX);
+	}
+	g_pos_x = newS;
+
+	dX = newE - g_pos_x;
+	if (dX < 0) aX = -dX; else aX = dX;
+	if (aX) {
+		m1d->goTo(d, dX);
+	}
+	g_pos_x = newE;
 	c->sendAck();
 }
 //====================================================================================
 
+/*!
+ * \brief Move relative command (in microsteps).
+ */
+static void stepperMoveRelative(CommandQueueItem *c)
+{
+	int d        = c->m_arg0;
+	int newS     = g_pos_x + c->m_arg1;
+	int aX, dX, mm = MAX_DIST_MOTTOR * 200 * current_microsteps;
+
+	if ((c->m_arg_mask & 3) != 3) {
+		c->sendError();
+		return;
+	}
+	/* Limit move distance */
+	if (newS > mm) newS = mm;
+	if (newS < 0) newS = 0;
+	
+	dX = newS - g_pos_x;
+	if (dX < 0) aX = -dX; else aX = dX;
+	if (aX) {
+		m1d->goTo(d, dX);
+	}
+	g_pos_x = newS;
+	c->sendAck();
+}
+//====================================================================================
+
+/*!
+ * \brief Move uncondicional - do not check limits (in microsteps).
+ */
+static void stepperMoveUncondicional(CommandQueueItem *c)
+{
+	int d        = c->m_arg0;
+	int newS     = g_pos_x + c->m_arg1;
+	int aX, dX;
+
+	if ((c->m_arg_mask & 3) != 3) {
+		c->sendError();
+		return;
+	}
+	dX = newS - g_pos_x;
+	if (dX < 0) aX = -dX; else aX = dX;
+	if (aX) {
+		m1d->goTo(d, dX);
+	}
+	g_pos_x = newS;
+	c->sendAck();
+}
+//====================================================================================
+
+/*!
+ * \brief STOP movement.
+ */
+static void stepperMoveStop(CommandQueueItem *c)
+{
+	m1d->stop();
+	g_pos_x = x_pos;
+	c->sendAck();
+}
+//====================================================================================
+
+/*!
+ * \brief Set zero.
+ */
+void cmdG90(CommandQueueItem *c)
+{
+	m1d->stop();
+	g_pos_x  = 0;
+	x_pos    = 0;
+	x_target = 0;
+	c->sendAck();
+}
+//====================================================================================
+
+/*!
+ * \brief CmdHome (detect home).
+ */
+void cmdHome(CommandQueueItem *c)
+{
+#ifdef z_endstop
+	/* Execute movement */
+	int newS     = g_pos_x - ((MAX_DIST_MOTTOR + 1) * 200 * current_microsteps);
+	int duration, aX, dX;
+	int speed    = 3000;
+
+	dX = newS - g_pos_x;
+	if (dX < 0) aX = -dX; else aX = dX;
+	/* Calculate duration in [ms] */
+	if (aX) {
+		duration = (aX * 1000)/speed;
+		m1d->goTo(duration, dX);
+	}
+	g_pos_x = newS;
+	/* Wait for motion to end */
+	while ( m1d->isInMotion() ) {
+		m1d->loop();
+		CmdDB.loop();
+		if ((digitalRead(z_endstop)) == 0) {
+			m1d->stop();
+			g_pos_x = 0;
+			c->sendAck();
+			break;
+		}
+		yield();
+	}
+	c->sendErrorText("Can not find HOME edge!!!");
+#else
+	/* GoTo 0 */
+	int newS     = 0;
+	int duration, aX, dX;
+	int speed    = 3000;
+
+	dX = newS - g_pos_x;
+	if (dX < 0) aX = -dX; else aX = dX;
+	/* Calculate duration in [ms] */
+	if (aX) {
+		duration = (aX * 1000)/speed;
+		m1d->goTo(duration, dX);
+	}
+	g_pos_x = newS;
+	c->sendAck();
+#endif
+}
+//====================================================================================
+
+
+/*!
+ * \brief Set mottor current in [mA] command.
+ */
 static void cmdCurrent(CommandQueueItem *c)
 {
 	if ((c->m_arg_mask & 1) != 1) {
@@ -213,6 +392,9 @@ static void cmdCurrent(CommandQueueItem *c)
 }
 //====================================================================================
 
+/*!
+ * \brief Set microsteps per step command.
+ */
 static void cmdSteps(CommandQueueItem *c)
 {
 	if ((c->m_arg_mask & 1) != 1) {
@@ -226,8 +408,9 @@ static void cmdSteps(CommandQueueItem *c)
 }
 //====================================================================================
 
-
-
+/*!
+ * \brief Enable/Disable mottors command..
+ */
 static void enableMotors(CommandQueueItem *c)
 {
 	int value = -1, cmd = -1;
@@ -254,19 +437,30 @@ static void enableMotors(CommandQueueItem *c)
 
 static void unrecognized(const char *command, Command *c) {c->print("!8 Err: Unknown command\r\n");}
 
+/*!
+ * \brief Fill commands database.
+ */
 static void makeCmdInterface()
 {
 	CmdDB.addCommand("v",[](CommandQueueItem *c) {
 		c->print("Slider-Firmware V1.0\r\n");
 	});
-	CmdDB.addCommand("EM",enableMotors);
-	CmdDB.addCommand("SM",stepperMove, true);
-	CmdDB.addCommand("M",stepperMoveSmart, true);
-	CmdDB.addCommand("MR",stepperMoveRelative, true);
-	CmdDB.addCommand("G90", cmdG90, true);
-	CmdDB.addCommand("C", cmdCurrent, true);
-	CmdDB.addCommand("S", cmdSteps, true);
-	CmdDB.addCommand("XX",[](CommandQueueItem *c){m1d->printStat(c);});
+	CmdDB.addCommand("EM" ,enableMotors);
+	/* Motion commands */
+	CmdDB.addCommand("M"  ,stepperMoveAbsoluteRev, true);
+	CmdDB.addCommand("MR" ,stepperMoveRelativeRev, true);
+	CmdDB.addCommand("MH", cmdHome, true);
+	CmdDB.addCommand("GT" ,stepperMoveAbsolute, true);
+	CmdDB.addCommand("GTR",stepperMoveRelative, true);
+	CmdDB.addCommand("GTH",cmdHome, true);
+	CmdDB.addCommand("UM" ,stepperMoveUncondicional, true);
+	CmdDB.addCommand("STP",stepperMoveStop);
+	/* Parameters */
+	CmdDB.addCommand("G90",cmdG90, true);
+	CmdDB.addCommand("C"  ,cmdCurrent, true);
+	CmdDB.addCommand("S"  ,cmdSteps, true);
+	/* Status */
+	CmdDB.addCommand("XX" ,[](CommandQueueItem *c){m1d->printStat(c);});
 	CmdDB.setDefaultHandler(unrecognized); // Handler for command that isn't matched (says "What?")
 
 	NCmd = new NetworkCommand(&CmdDB, NPORT);
