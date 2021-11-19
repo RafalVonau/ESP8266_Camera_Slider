@@ -39,7 +39,7 @@ Features:
 * ESP8266 (bare ESP8266 module or D1 mini),
 * DC/DC converter 12V to 3.3V,
 * 1 x TMC2208,
-* 1 x Stepper mottor Nema 17,
+* 1 x Stepper motor Nema 17,
 * wires,
 * connectors,
 * [1 x Limit Switch Endstop for Creality CR-10 10S Ender 3] - OPTIONAL
@@ -49,14 +49,22 @@ Features:
 * STEP      - GPIO14 (D5)
 * DIR1      - GPIO13 (D7)
 * MOTTOR EN - GPIO2  (D4)
-* RX        - TMC2208 single wire uart (1kohm from RX to TX)
-* TX        - TMC2208 single wire uart (1kohm from RX to TX)
+* RX        - TMC2208 single wire UART (1kohm from RX to TX)
+* TX        - TMC2208 single wire UART (1kohm from RX to TX)
 * ENDSTOP   - GPIO4  (D2)  - OPTIONAL
 # Wiring
 
 ![alt tag](https://github.com/BubuHub/ESP8266_Camera_Slider/blob/main/blob/assets/schematic.png)
 
-## Building
+# Software architecture
+
+The ESP8266 generates STEP and DIR signals to the TMC2208 chip for motor movement. The UART connection allows you to program the TMC2208 chip registers so you can easily change the current and the number of micro steps per step without having to turn a potentiometer or change jumpers. 
+
+STEP signal is generated using Timer1 (for performance reasons the interrupt control was taken from this timer and it was set to AUTORELOAD mode) and because Timer1 is used in servo/pwm(analogWrite)/tone/waveform functions these functions can't be used in this code. 
+
+Commands are received on the fly from TCP channels (port 2500) and the WWW page (POST) and then passed to the command queue. The movement commands are passed to a separate queue so that sequences of movements can be queued. When the move is completed, the next command from the move queue is taken, and so on.
+
+# Building
 
 Uncomment and modify Wifi client settings in secrets.h file:
 * #define WIFI_SSID                "Slider"
@@ -66,8 +74,8 @@ The project uses platformio build environment.
 [PlatformIO](https://platformio.org/) - Professional collaborative platform for embedded development.
 
 * install PlatformIO
-* enter project directory (esp8266_firmware)
-* connect ESP8266 PC computer over USB to serial cable.
+* enter project directory
+* connect ESP8266 to PC computer over USB to serial cable.
 * type in terminal:
   platformio run -t upload
 
@@ -80,22 +88,22 @@ You can also use IDE to build this project on Linux/Windows/Mac. My fvorite ones
 EM  - enable mottors,
 
 Movement in revolutions:\
-M   - absolute move in mottor revolutions (M,duration [ms],start_rev,target_rev),\
-MR  - relative move in mottor revolutions (MR,duration [ms],delta rev),\
+M   - absolute move in motor revolutions (M,duration [ms],start_rev,target_rev),\
+MR  - relative move in motor revolutions (MR,duration [ms],delta rev),\
 MH  - move to home (endstop switch is required),
 
 Movement in microsteps:\
-GT  - apbsolute move in microsteps (GT,duration [ms],start_microstep,target_microstep)\
+GT  - absolute move in microsteps (GT,duration [ms],start_microstep,target_microstep)\
 GTR - relative move in microsteps (GTR,duration [ms],delta microsteps)\
 GTH - move to home (endstop switch is required),\
-UM  - unconditional relative move in microsteps WARRNING: do not check limits. (UM,duration [ms],delta microsteps)
+UM  - unconditional relative move in microsteps WARNING: do not check limits. (UM,duration [ms],delta microsteps)
 
 STP - STOP move,
 
 Parameters set:\
 G90 - Set this possition as zero point,\
-C   - set motor current in [mA]),\
-S   - set mocrosteps per step,
+C   - set motor current in [mA],\
+S   - set microsteps per step,
 
 STATUS:\
 XX  - print status,
