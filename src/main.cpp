@@ -94,10 +94,10 @@ void setup()
 	driver.begin();
 	driver.pdn_disable(true);          // Use PDN/UART pin for communication
 	driver.I_scale_analog(false);      // Use internal voltage reference
-	driver.rms_current(400);           // Set motor RMS current
+	driver.rms_current(300);           // Set motor RMS current
 	driver.mstep_reg_select(1);        // necessary for TMC2208 to set microstep register with UART
-	driver.microsteps(8);
-	current_microsteps = 8;
+	driver.microsteps(16);
+	current_microsteps = 16;
 	driver.toff(5);                    // Enables driver in software
 	//  driver.en_pwm_mode(true);      // Enable stealthChop
 	driver.pwm_autoscale(true);        // Needed for stealthChop
@@ -145,7 +145,7 @@ static void stepperMoveAbsoluteRev(CommandQueueItem *c)
 	int newS     = c->m_arg1;
 	int newE     = c->m_arg2;
 	int duration, aX, dX;
-	int speed    = 3000;
+	int speed    = 6000;
 
 	if ((c->m_arg_mask & 7) != 7) {
 		c->sendError();
@@ -335,7 +335,7 @@ void cmdHome(CommandQueueItem *c)
 	/* Execute movement */
 	int newS     = g_pos_x - ((MAX_DIST_MOTTOR + 1) * 200 * current_microsteps);
 	int duration, aX, dX;
-	int speed    = 3000;
+	int speed    = 6000;
 
 	dX = newS - g_pos_x;
 	if (dX < 0) aX = -dX; else aX = dX;

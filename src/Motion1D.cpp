@@ -14,6 +14,7 @@ extern "C" {
 #include "Motion1D.h"
 #include "esp8266_gpio_direct.h"
 #include "core_esp8266_waveform.h"
+#include "ramp.h"
 
 #define TIMER1_DIVIDE_BY_1              0x0000
 #define TIMER1_DIVIDE_BY_16             0x0004
@@ -22,15 +23,28 @@ extern "C" {
 
 #define MIN_PERIOD                      (4000)
 
-static volatile int        int_active      = 0;   /*!< Timer1 interrupt is active (Timer1 is running).   */
-static volatile int        in_motion       = 0;   /*!< We are in motion.                                 */
+static volatile int        int_active       = 0;   /*!< Timer1 interrupt is active (Timer1 is running).   */
+static volatile int        in_motion        = 0;   /*!< We are in motion.                                 */
 
 /* X */
-static uint16_t            x_gpio_mask     = 0;   /*!< GPIO mask for STEP pin.                           */
-static volatile uint32_t   x_hperiod       = 0;   /*!< TIMER1 half period in clock cycles (80MHz clock). */
-volatile int               x_target        = 0;   /*!< Target position.                                  */
-volatile int               x_pos           = 0;   /*!< Current position.                                 */
-static volatile int        x_pulse         = 0;   /*!< STEP pulse phase 0 (level 0), 1 (level 1).        */
+static uint16_t            x_gpio_mask      = 0;   /*!< GPIO mask for STEP pin.                           */
+static volatile uint32_t   x_hperiod        = 0;   /*!< TIMER1 half period in clock cycles (80MHz clock). */
+volatile int               x_target         = 0;   /*!< Target position.                                  */
+volatile int               x_pos            = 0;   /*!< Current position.                                 */
+static volatile int        x_pulse          = 0;   /*!< STEP pulse phase 0 (level 0), 1 (level 1).        */
+
+#ifdef USE_RAMP
+volatile int               x_pos_start      = 0;   /*!< Motion start position.                            */
+volatile int               x_pos_middle     = 0;   /*!< Motion middle point.                              */
+volatile int               x_ramp_len       = 0;   /*!< Motion ramp length.                               */
+volatile int               x_ramp_pos       = 0;   /*!< Current ramp table index.                         */
+volatile int               x_ramp_iter      = 0;   /*!< Current iterations.                               */
+volatile int               x_ramp_phase     = 0;   /*!< Current ramp phase.                               */
+volatile uint32_t          x_target_hperiod = 0;   /*!< Target half period.                               */
+volatile int               x_dir            = 0;   /*!< Motion direction.                                 */
+#endif
+
+
 
 struct timer_regs {
 	uint32_t frc1_load;   /* 0x60000600 */
@@ -192,6 +206,20 @@ void Motion1D::goToReal(int duration, int xSteps)
 	x_target += xSteps;
 	/* Set direction pin */
 	if (x_target > x_pos) digitalWrite(m_x_dir, HIGH); else digitalWrite(m_x_dir, LOW);
+	/* Prepare RAMP */
+#ifdef USE_RAMP
+	x_pos_start = x_pos;
+	if (x_target > x_pos) {
+		x_dir = 1;
+		x_pos_middle = x_pos - 2 + ((x_target - x_pos)>>1);
+	} else {
+		x_dir = 0;
+		x_pos_middle = x_pos + 2 - ((x_pos-x_target)>>1);
+	}
+	x_ramp_pos   = 0;
+	x_ramp_iter  = 0;
+	x_ramp_phase = 0;
+#endif
 	/* ABS */
 	if (xSteps < 0) xSteps = -xSteps;
 	/* Set period (timer1 clock  = 80MHz) */
@@ -201,6 +229,15 @@ void Motion1D::goToReal(int duration, int xSteps)
 		tmp = 160000;
 	}
 	if (tmp < MIN_PERIOD) tmp = MIN_PERIOD;
+#ifdef USE_RAMP
+	if (tmp < RMAXIMUM_PERIOD) tmp = RMAXIMUM_PERIOD;
+
+	if (tmp < RSTART_STOP_PERIOD) {
+		x_target_hperiod = ((tmp >> 1)&0xffffffff);
+		x_ramp_phase     = 1;
+		tmp = RSTART_STOP_PERIOD;
+	}
+#endif
 	/* Calculate half period */
 	x_hperiod = ((tmp >> 1)&0xffffffff);
 
@@ -282,6 +319,50 @@ void ICACHE_RAM_ATTR motion_intr_handler(void)
 			timer->frc1_ctrl = 0;
 			int_active = 0;
 		}
+#ifdef USE_RAMP
+		/* Tabled ramp implementation */
+		else if (x_ramp_phase) {
+			if (x_ramp_phase == 1) {
+				/* Ramp UP */
+				if (x_hperiod > x_target_hperiod) {
+					if (x_ramp_iter == 0) {
+						x_hperiod--;
+						RTC_REG_WRITE(FRC1_LOAD_ADDRESS, x_hperiod);
+						x_ramp_iter = ramp[x_ramp_pos++];
+						/* Recalculate middle point */
+						if (x_hperiod == x_target_hperiod) {
+							if (x_dir == 1) {
+								x_ramp_len   = x_pos - x_pos_start;
+								x_pos_middle = x_target - x_ramp_len;
+							} else {
+								x_ramp_len = x_pos_start - x_pos;
+								x_pos_middle = x_target + x_ramp_len;
+							}
+						}
+					} else {
+						x_ramp_iter--;
+					}
+				}
+				/* Check middle point */
+				if (x_dir == 1) {
+					if (x_pos > x_pos_middle) {x_ramp_phase = 2;}
+				} else {
+					if (x_pos < x_pos_middle) {x_ramp_phase = 2;}
+				}
+			} else {
+				/* Ramp DOWN */
+				if (x_hperiod < RSTART_STOP_HPERIOD) {
+					if (x_ramp_iter == 0) {
+						x_hperiod++;
+						RTC_REG_WRITE(FRC1_LOAD_ADDRESS, x_hperiod);
+						x_ramp_iter = ramp[x_ramp_pos--];
+					} else {
+						x_ramp_iter--;
+					}
+				}
+			}
+		}
+#endif
 	} else if (x_pos != x_target) {
 		asm volatile ("" : : : "memory");
 		gpio_r->out_w1ts = (uint32_t)(x_gpio_mask);
