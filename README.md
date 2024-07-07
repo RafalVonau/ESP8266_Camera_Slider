@@ -14,7 +14,7 @@ Features:
 - Set mottor current and microsteps per step by a command (software),
 - Optional endstop switch for homing.
 
-![alt tag](https://github.com/BubuHub/ESP8266_Camera_Slider/blob/main/blob/assets/slider.jpg)
+![alt tag](https://github.com/RafalVonau/ESP8266_Camera_Slider/blob/main/blob/assets/slider.jpg)
 
 
 # Mechanical parts needed:
@@ -30,9 +30,9 @@ Features:
 * screws
 
 
-![alt tag](https://github.com/BubuHub/ESP8266_Camera_Slider/blob/main/blob/assets/front.jpg)
+![alt tag](https://github.com/RafalVonau/ESP8266_Camera_Slider/blob/main/blob/assets/front.jpg)
 
-![alt tag](https://github.com/BubuHub/ESP8266_Camera_Slider/blob/main/blob/assets/rear.jpg)
+![alt tag](https://github.com/RafalVonau/ESP8266_Camera_Slider/blob/main/blob/assets/rear.jpg)
 
 
 # Electrical parts needed:
@@ -54,7 +54,7 @@ Features:
 * ENDSTOP   - GPIO4  (D2)  - OPTIONAL
 # Wiring
 
-![alt tag](https://github.com/BubuHub/ESP8266_Camera_Slider/blob/main/blob/assets/schematic.png)
+![alt tag](https://github.com/RafalVonau/ESP8266_Camera_Slider/blob/main/blob/assets/schematic.png)
 
 # Software architecture
 
